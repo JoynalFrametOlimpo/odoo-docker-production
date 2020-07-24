@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+    postgres:
+        image: postgres:12-alpine
+        container_name: postgres
+        restart: unless-stopped
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_USER=$DB_USER
+            - POSTGRES_PASSWORD=$DB_PASSWORD
+            - POSTGRES_DB=postgres
+        volumes:
+            - database:/var/lib/postgresql/data
+        networks:
+            - odoo-network
+    odoo:
+        image: odoo:13.0
+        container_name: odoo
+        restart: unless-stopped
+        depends_on:
+            - postgres
+        links:
+            - postgres
+        ports:
+            - "8069:8069"
+        volumes:
+            - /opt/odoo/conf:/etc/odoo
+            - /opt/odoo/extra-addons:/mnt/extra-addons
+            - /opt/odoo/filestore/var/lib/odoo
+        command: odoo
+        networks:
+           - odoo-network
+        environment:
+            - DB_PORT_5432_TCP_ADDR=postgres
+            - DB_PORT_5432_TCP_PORT=5432
+            - DB_ENV_POSTGRES_USER=$DB_USER
+            - DB_ENV_POSTGRES_PASSWORD=$DB_PASSWORD
+            - DB_ENV_POSTGRES_DB=postgres
+            - ADMIN_PASS=$ODOO_ADMIN_PASS
+networks:
+     odoo-network:
+       driver: bridge
+volumes:
+     database:
